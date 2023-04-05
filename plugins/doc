@@ -1,0 +1,20 @@
+*********************************************************************
+SERVER PLUGIN YAPISI - 05.07.2021 - ALI KEMAL KARACA
+- EĞER GENSRV E DAHİL OLMAYAN BİR KÜTÜPHANE KULLANMAK İSTENİYORSA 
+  PROJENİZİN İÇERİSİNDEKİ PACKAGE.JSON DEPENDENCIES İÇERİSİNE EKLEYİN.
+- MASTER JS HARİCİNDE FARKLI JS DOSYALARINIZ VARSA BUNLARI KLASÖR 
+  İÇERİSİNE ALIN.
+*********************************************************************
+ÖRNEK JS
+*********************************************************************
+import core from 'gensrv' (TEST İÇİN '../../index.js')
+
+class plugins 
+{
+    constructor()
+    {        
+       
+    }    
+}
+export const _plugins = new plugins()
+**********************************************************************
