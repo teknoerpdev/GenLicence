@@ -37,6 +37,11 @@ class licence
 
         this.core.app.post('/licenceCheck', async (req, res) => 
         {
+            
+        })
+
+        this.core.app.get('/licenceSave', async (req, res) => 
+        {
             const tokenHeader = req.headers['authorization']
 
             if(typeof tokenHeader !== 'undefined')
@@ -47,12 +52,7 @@ class licence
             else
             {
                 return res.status(404).send(await result.errorResult("Token Not Found"))
-            }
-        })
-
-        this.core.app.get('/licenceSave',(req, res) => 
-        {
-            
+            } 
         })
     }
 }
