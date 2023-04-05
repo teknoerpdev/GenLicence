@@ -1,8 +1,7 @@
 {
     "type": "module",
     "dependencies": {
-        "crypto-js": "^4.1.1",
-        "cryptojs": "^2.5.3",
-        "gensrv": "^1.0.95"
+        "crypto-js": "4.1.1",
+        "gensrv": "1.0.95"
     }
 }
