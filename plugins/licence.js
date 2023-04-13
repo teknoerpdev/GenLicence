@@ -4,12 +4,13 @@ import {io} from 'socket.io-client'
 import express from 'express'
 import CryptoJS from "crypto-js";
 
-class licence 
+class mainLicence 
 {
     constructor()
     {   
         this.core = core.instance
         this.auth = new auth()
+        this.licence = new licence()
 
         this.core.app.use(express.json()); 
         this.restRun()
@@ -25,35 +26,161 @@ class licence
 
             const userInfo = await this.auth.login(req.body)
 
-            if(!userInfo || (userInfo && !userInfo.length))
+            if(!userInfo || userInfo.err || (userInfo && !userInfo.length))
             {
                 return res.status(404).send(await result.errorResult("Invalid Login"))
             }
 
             const encryptPass = await this.auth.generateToken(req.body)
 
-            return res.status(200).send(await result.successResult("success",{accessToken : encryptPass}))
+            if(!encryptPass || encryptPass.err)
+            {
+                return res.status(404).send(await result.errorResult("Failed to Create Token"))
+            }
+
+            return res.status(200).send(await result.successResult("success",{accessToken: encryptPass}))
         })
 
         this.core.app.post('/licenceCheck', async (req, res) => 
         {
-            
+            if(!req || !req.body || !req.body.macId)
+            {
+                return res.status(404).send(await result.errorResult("Missing Parameters"))
+            }
+
+            const licence = await this.licence.licenceCheck(req.body.macId)
+            console.log(licence)
+
+            if(!licence || licence.err || (licence && !licence.length))
+            {
+                return res.status(404).send(await result.errorResult("Licence Not Found"))
+            }
+
         })
 
-        this.core.app.get('/licenceSave', async (req, res) => 
+        this.core.app.post('/companySave', async (req, res) => 
         {
+            if(!req || !req.body)
+            {
+                return res.status(404).send(await result.errorResult("Missing Parameters"))
+            }
+
+            if(!req.headers['authorization'])
+            {
+                return res.status(404).send(await result.errorResult("Token Not Found"))
+            }
+
+            const paramsToCheck = 
+            {
+                "title": req.body.title,
+                "taxNumber": req.body.taxNumber, 
+                "adress": req.body.adress, 
+                "mail": req.body.mail, 
+                "phone": req.body.phone
+            }
+
+            const checkResult = this.checkParams(paramsToCheck)
+
+            if(!checkResult.success)
+            {
+                return res.status(404).send(await result.errorResult(checkResult.message))
+            }
+
             const tokenHeader = req.headers['authorization']
 
             if(typeof tokenHeader !== 'undefined')
             {
                 const token = tokenHeader.split(' ')[1]
+                
+                const login = await this.auth.loginCheck(token)
+
+                if(!login || login.err)
+                {
+                    return res.status(404).send(await result.errorResult("Invalid Token"))
+                }
+
+                req.body["login"] = login[0].CODE
+
+                const companySave = await this.licence.companySave(req.body)
+                
+                if(!companySave || companySave.err)
+                {
+                    return res.status(404).send(await result.errorResult("Company could not be registered",{ err: companySave.err}))
+                }
+
+                if(typeof companySave[0].MSG != 'undefined')
+                {
+                    return res.status(404).send(await result.errorResult(companySave[0].MSG))
+                }
+
+                return res.status(200).send(await result.successResult("Company has been successfully created"))
 
             }
-            else
+
+        })
+
+        this.core.app.post('/licenceSave', async (req, res) => 
+        {
+            if(!req || !req.body)
+            {
+                return res.status(404).send(await result.errorResult("Missing Parameters"))
+            }
+
+            if(!req.headers['authorization'])
             {
                 return res.status(404).send(await result.errorResult("Token Not Found"))
-            } 
+            }
+
+            const paramsToCheck = 
+            {
+                "app": req.body.app, 
+                "packet": req.body.packet, 
+                "startDate": req.body.startDate, 
+                "endDate": req.body.endDate, 
+                "seller": req.body.seller
+            }
+
+            const checkResult = this.checkParams(paramsToCheck)
+
+            if(!checkResult.success)
+            {
+                return res.status(404).send(await result.errorResult(checkResult.message))
+            }
+
+            const tokenHeader = req.headers['authorization']
+
+            if(typeof tokenHeader !== 'undefined')
+            {
+                const token = tokenHeader.split(' ')[1]
+                
+                const login = await this.auth.loginCheck(token)
+
+                if(!login || login.err)
+                {
+                    return res.status(404).send(await result.errorResult("Invalid Token"))
+                }
+
+                req.body["login"] = login[0].CODE
+
+                const licenceSave = await this.licence.licenceSave(req.body)
+
+
+            }
+
         })
+
+    }
+    checkParams(pParams)
+    {
+        for (const param in pParams) 
+        {
+            if (!pParams[param] || pParams[param].trim() === '') 
+            {
+                return { success: false, message: `${param} is required` };
+            }
+        }
+        
+        return { success: true };
     }
 }
 class auth
@@ -68,13 +195,13 @@ class auth
         const data = await this.core.sql.execute
         (
             {
-                query: "SELECT SHA FROM USERS WHERE SHA = (SELECT [dbo].[FN_LOGIN] (@USER,@PASS))",
+                query: `SELECT SHA FROM USERS WHERE SHA = (SELECT [dbo].[FN_LOGIN] (@USER,@PASS))`,
                 param: ["USER:string|25","PASS:string|50"],
                 value: [pData.login,this.core.util.toBase64(pData.pass)]
             }
         )
 
-        return typeof data.result.err != 'undefined' ? data.result.err : data.result.recordset
+        return typeof data.result.err != 'undefined' ? data.result : data.result.recordset
     }
     async generateToken(pData)
     {
@@ -83,25 +210,89 @@ class auth
         const data = await this.core.sql.execute
         (
             {
-                query: "UPDATE USERS SET SHA = @PASS WHERE CODE = @USER",
+                query: `UPDATE USERS SET SHA = @PASS WHERE CODE = @USER`,
                 param: ["PASS:string|50","USER:string|25"],
                 value: [encryptPass,pData.login]
             }
         )
-        return typeof data.result.err != 'undefined' ? data.result.err : encryptPass
+        return typeof data.result.err != 'undefined' ? data.result : encryptPass
     }
     async loginCheck(pToken)
     {
         const data = await this.core.sql.execute
         (
             {
-                query: "SELECT SHA FROM USERS WHERE SHA = @SHA",
+                query: `SELECT CODE FROM USERS WHERE SHA = @SHA`,
                 param: ["SHA:string|200"],
                 value: [pToken]
             }
         )
 
-        return typeof data.result.err != 'undefined' ? data.result.err : data.result.recordset
+        return typeof data.result.err != 'undefined' ? data.result : data.result.recordset
+    }
+}
+class licence
+{
+    constructor()
+    {
+        this.core = core.instance
+    }
+    async licenceCheck(pMacId)
+    {
+        const data = await this.core.sql.execute
+        (
+            {
+                query: `SELECT MAC_ID FROM LICENCES WHERE MAC_ID = @MAC_ID`,
+                param: ["MAC_ID:string|100"],
+                value: [pMacId]
+            }
+        )
+
+        return typeof data.result.err != 'undefined' ? data.result : data.result.recordset
+    }
+    async licenceSave()
+    {
+        const data = await this.core.sql.execute
+        (
+            {
+                query: `IF EXISTS ( SELECT TAX_NUMBER FROM [dbo].[COMPANIES] WHERE TAX_NUMBER = @TAX_NUMBER) BEGIN
+                            SELECT @TAX_NUMBER + ' tax already exists' AS MSG 
+                        END
+                        ELSE BEGIN
+                            INSERT INTO [dbo].[COMPANIES] (
+                            [CUSER], [LUSER], [TAX_NUMBER], [TITLE], [ADRESS], [MAIL], [PHONE]
+                            ) VALUES (
+                            @USER, @USER, @TAX_NUMBER, @TITLE, @ADRESS, @MAIL, @PHONE
+                            ) 
+                        END `,
+                param: ['USER:string|50','TAX_NUMBER:string|50','TITLE:string|200','ADRESS:string|max','MAIL:string|50','PHONE:string|50'],
+                value: [pBody.login,pBody.taxNumber,pBody.title,pBody.adress,pBody.mail,pBody.phone]
+            }
+        )
+
+        return typeof data.result.err != 'undefined' ? data.result : data.result.recordset
+    }
+    async companySave(pBody)
+    {
+        const data = await this.core.sql.execute
+        (
+            {
+                query: `IF EXISTS ( SELECT TAX_NUMBER FROM [dbo].[COMPANIES] WHERE TAX_NUMBER = @TAX_NUMBER) BEGIN
+                            SELECT @TAX_NUMBER + ' tax already exists' AS MSG 
+                        END
+                        ELSE BEGIN
+                            INSERT INTO [dbo].[COMPANIES] (
+                            [CUSER], [LUSER], [TAX_NUMBER], [TITLE], [ADRESS], [MAIL], [PHONE]
+                            ) VALUES (
+                            @USER, @USER, @TAX_NUMBER, @TITLE, @ADRESS, @MAIL, @PHONE
+                            ) 
+                        END `,
+                param: ['USER:string|50','TAX_NUMBER:string|50','TITLE:string|200','ADRESS:string|max','MAIL:string|50','PHONE:string|50'],
+                value: [pBody.login,pBody.taxNumber,pBody.title,pBody.adress,pBody.mail,pBody.phone]
+            }
+        )
+
+        return typeof data.result.err != 'undefined' ? data.result : data.result.recordset
     }
 }
 class crypto
@@ -121,7 +312,7 @@ class crypto
 }
 class result
 {
-    static async successResult(pMessage,pBody)
+    static async successResult(pMessage, pBody = {})
     {
         return {
             "success" : true,
@@ -130,14 +321,14 @@ class result
             "body": pBody
         }
     }
-    static async errorResult(pMessage)
+    static async errorResult(pMessage, pBody = {})
     {
         return {
             "success" : false,
             "message" : pMessage,
             "statusCode" : 404,
-            "body": {}
+            "body": pBody
         }
     }
 }
-export const _licence = new licence()
+export const _mainLicence = new mainLicence()
