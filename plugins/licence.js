@@ -11,6 +11,7 @@ class mainLicence
         this.core = core.instance
         this.auth = new auth()
         this.licence = new licence()
+        this.crypto = new crypto()
 
         this.core.app.use(express.json()); 
         this.restRun()
@@ -133,6 +134,7 @@ class mainLicence
 
             const paramsToCheck = 
             {
+                "tax": req.body.tax,
                 "app": req.body.app, 
                 "packet": req.body.packet, 
                 "startDate": req.body.startDate, 
@@ -161,9 +163,16 @@ class mainLicence
                 }
 
                 req.body["login"] = login[0].CODE
+                req.body["installKey"] = await generateInstallKey()
 
                 const licenceSave = await this.licence.licenceSave(req.body)
 
+                if(!licenceSave || licenceSave.err)
+                {
+                    return res.status(404).send(await result.errorResult("Licence could not be registered",{ err: licenceSave.err}))
+                }
+
+                return res.status(200).send(await result.successResult("Licence has been successfully created"))
 
             }
 
@@ -181,6 +190,21 @@ class mainLicence
         }
         
         return { success: true };
+    }
+    async generateInstallKey()
+    {
+        let key = ""
+
+        const keyList = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","Y","Z","X",
+        "0","1","2","3","4","5","6","7","8","9"];
+
+        for(let i = 0; i < 15; i++)
+        {
+            let random = Math.floor(Math.random()*35);
+            key += keyList[random];
+        }
+
+        return key
     }
 }
 class auth
@@ -255,17 +279,12 @@ class licence
         const data = await this.core.sql.execute
         (
             {
-                query: `IF EXISTS ( SELECT TAX_NUMBER FROM [dbo].[COMPANIES] WHERE TAX_NUMBER = @TAX_NUMBER) BEGIN
-                            SELECT @TAX_NUMBER + ' tax already exists' AS MSG 
-                        END
-                        ELSE BEGIN
-                            INSERT INTO [dbo].[COMPANIES] (
-                            [CUSER], [LUSER], [TAX_NUMBER], [TITLE], [ADRESS], [MAIL], [PHONE]
-                            ) VALUES (
-                            @USER, @USER, @TAX_NUMBER, @TITLE, @ADRESS, @MAIL, @PHONE
-                            ) 
-                        END `,
-                param: ['USER:string|50','TAX_NUMBER:string|50','TITLE:string|200','ADRESS:string|max','MAIL:string|50','PHONE:string|50'],
+                query: `INSERT INTO [dbo].[LICENSES] (
+                        [CUSER], [LUSER], [COMP_TAX], [PACKET], [MAC_ID], [INSTALL_KEY], [START_DATE], [END_DATE], [SELLER]
+                        ) VALUES (
+                        @USER, @USER, @TAX_NUMBER, @PACKET_ID, NULL, @INSTALL_KEY, @START_DATE, @END_DATE, @SELLER
+                        ) `,
+                param: ['USER:string|50','TAX_NUMBER:string|50','PACKET_ID:int','INSTALL_KEY:string|15','START_DATE:date','END_DATE:date','SELLER:string|50'],
                 value: [pBody.login,pBody.taxNumber,pBody.title,pBody.adress,pBody.mail,pBody.phone]
             }
         )
