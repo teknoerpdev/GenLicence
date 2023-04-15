@@ -50,13 +50,11 @@ class mainLicence
             }
 
             const licence = await this.licence.licenceCheck(req.body.macId)
-            console.log(licence)
 
             if(!licence || licence.err || (licence && !licence.length))
             {
                 return res.status(404).send(await result.errorResult("Licence Not Found"))
             }
-
         })
 
         this.core.app.post('/companySave', async (req, res) => 
@@ -95,7 +93,7 @@ class mainLicence
                 
                 const login = await this.auth.loginCheck(token)
 
-                if(!login || login.err)
+                if(!login || !login.length || login.err)
                 {
                     return res.status(404).send(await result.errorResult("Invalid Token"))
                 }
@@ -115,9 +113,7 @@ class mainLicence
                 }
 
                 return res.status(200).send(await result.successResult("Company has been successfully created"))
-
             }
-
         })
 
         this.core.app.post('/licenceSave', async (req, res) => 
@@ -157,7 +153,7 @@ class mainLicence
                 
                 const login = await this.auth.loginCheck(token)
 
-                if(!login || login.err)
+                if(!login || !login.length || login.err)
                 {
                     return res.status(404).send(await result.errorResult("Invalid Token"))
                 }
@@ -173,11 +169,8 @@ class mainLicence
                 }
 
                 return res.status(200).send(await result.successResult("Licence has been successfully created"))
-
             }
-
         })
-
     }
     checkParams(pParams)
     {
@@ -251,7 +244,7 @@ class auth
                 value: [pToken]
             }
         )
-
+            console.log(data)
         return typeof data.result.err != 'undefined' ? data.result : data.result.recordset
     }
 }
@@ -266,7 +259,7 @@ class licence
         const data = await this.core.sql.execute
         (
             {
-                query: `SELECT MAC_ID FROM LICENCES WHERE MAC_ID = @MAC_ID`,
+                query: `SELECT MAC_ID FROM LICENSES WHERE MAC_ID = @MAC_ID`,
                 param: ["MAC_ID:string|100"],
                 value: [pMacId]
             }
