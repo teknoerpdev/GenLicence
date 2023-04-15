@@ -130,8 +130,7 @@ class mainLicence
 
             const paramsToCheck = 
             {
-                "tax": req.body.tax,
-                "app": req.body.app, 
+                "taxNumber": req.body.taxNumber,
                 "packet": req.body.packet, 
                 "startDate": req.body.startDate, 
                 "endDate": req.body.endDate, 
@@ -159,7 +158,7 @@ class mainLicence
                 }
 
                 req.body["login"] = login[0].CODE
-                req.body["installKey"] = await generateInstallKey()
+                req.body["installKey"] = await this.generateInstallKey()
 
                 const licenceSave = await this.licence.licenceSave(req.body)
 
@@ -267,7 +266,7 @@ class licence
 
         return typeof data.result.err != 'undefined' ? data.result : data.result.recordset
     }
-    async licenceSave()
+    async licenceSave(pBody)
     {
         const data = await this.core.sql.execute
         (
@@ -278,7 +277,7 @@ class licence
                         @USER, @USER, @TAX_NUMBER, @PACKET_ID, NULL, @INSTALL_KEY, @START_DATE, @END_DATE, @SELLER
                         ) `,
                 param: ['USER:string|50','TAX_NUMBER:string|50','PACKET_ID:int','INSTALL_KEY:string|15','START_DATE:date','END_DATE:date','SELLER:string|50'],
-                value: [pBody.login,pBody.taxNumber,pBody.title,pBody.adress,pBody.mail,pBody.phone]
+                value: [pBody.login,pBody.taxNumber,pBody.packet,pBody.installKey,pBody.startDate,pBody.endDate,pBody.seller]
             }
         )
 
