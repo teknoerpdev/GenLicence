@@ -130,7 +130,11 @@ class mainLicence
 
             const paramsToCheck = 
             {
+                "title": req.body.title,
                 "taxNumber": req.body.taxNumber,
+                "adress": req.body.adress, 
+                "mail": req.body.mail, 
+                "phone": req.body.phone,
                 "packet": req.body.packet, 
                 "startDate": req.body.startDate, 
                 "endDate": req.body.endDate, 
@@ -161,6 +165,8 @@ class mainLicence
                 req.body["installKey"] = await this.generateInstallKey()
 
                 const licenceSave = await this.licence.licenceSave(req.body)
+
+                console.log(licenceSave)
 
                 if(!licenceSave || licenceSave.err)
                 {
@@ -243,7 +249,7 @@ class auth
                 value: [pToken]
             }
         )
-            console.log(data)
+
         return typeof data.result.err != 'undefined' ? data.result : data.result.recordset
     }
 }
@@ -271,17 +277,25 @@ class licence
         const data = await this.core.sql.execute
         (
             {
-                query: `INSERT INTO [dbo].[LICENSES] (
-                        [CUSER], [LUSER], [COMP_TAX], [PACKET], [MAC_ID], [INSTALL_KEY], [START_DATE], [END_DATE], [SELLER]
-                        ) VALUES (
-                        @USER, @USER, @TAX_NUMBER, @PACKET_ID, NULL, @INSTALL_KEY, @START_DATE, @END_DATE, @SELLER
-                        ) `,
-                param: ['USER:string|50','TAX_NUMBER:string|50','PACKET_ID:int','INSTALL_KEY:string|15','START_DATE:date','END_DATE:date','SELLER:string|50'],
-                value: [pBody.login,pBody.taxNumber,pBody.packet,pBody.installKey,pBody.startDate,pBody.endDate,pBody.seller]
+                query: `EXEC [dbo].[licenceSave] 
+                        @USER = @USER, 
+                        @TAX_NUMBER = @TAX_NUMBER, 
+                        @TITLE = @TITLE, 
+                        @ADRESS = @ADRESS, 
+                        @MAIL = @MAIL, 
+                        @PHONE = @PHONE, 
+                        @PACKET_ID = @PACKET_ID, 
+                        @INSTALL_KEY = @INSTALL_KEY, 
+                        @START_DATE = @START_DATE, 
+                        @END_DATE = @END_DATE, 
+                        @SELLER = @SELLER `,
+                param: ['USER:string|50','TITLE:string|200','TAX_NUMBER:string|50','ADRESS:string|max','MAIL:string|50','PHONE:string|50',
+                        'PACKET_ID:int','INSTALL_KEY:string|15','START_DATE:datetime','END_DATE:datetime','SELLER:string|50'],
+                value: [pBody.login,pBody.title,pBody.taxNumber,pBody.adress,pBody.mail,pBody.phone,pBody.packet,pBody.installKey,pBody.startDate,pBody.endDate,pBody.seller]
             }
         )
 
-        return typeof data.result.err != 'undefined' ? data.result : data.result.recordset
+        return typeof data.result.err != 'undefined' ? data.result : data.result.rowsAffected
     }
     async companySave(pBody)
     {
@@ -300,6 +314,19 @@ class licence
                         END `,
                 param: ['USER:string|50','TAX_NUMBER:string|50','TITLE:string|200','ADRESS:string|max','MAIL:string|50','PHONE:string|50'],
                 value: [pBody.login,pBody.taxNumber,pBody.title,pBody.adress,pBody.mail,pBody.phone]
+            }
+        )
+
+        return typeof data.result.err != 'undefined' ? data.result : data.result.recordset
+    }
+    async macIdUpdate(pMacId)
+    {
+        const data = await this.core.sql.execute
+        (
+            {
+                query: `SELECT MAC_ID FROM LICENSES WHERE MAC_ID = @MAC_ID`,
+                param: ["MAC_ID:string|100"],
+                value: [pMacId]
             }
         )
 
