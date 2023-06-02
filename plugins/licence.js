@@ -324,7 +324,7 @@ class licence
         const data = await this.core.sql.execute
         (
             {
-                query: `SELECT MAC_ID FROM LICENSES WHERE MAC_ID = @MAC_ID`,
+                query: `SELECT MAC_ID FROM LICENSES WHERE COMP_TAX = @COMP_TAX AND `,
                 param: ["MAC_ID:string|100"],
                 value: [pMacId]
             }
