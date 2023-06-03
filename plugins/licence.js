@@ -187,13 +187,13 @@ class mainLicence
                 req.body["login"] = login[0].CODE
 
                 const companySave = await this.licence.companySave(req.body)
-                
+
                 if(!companySave || typeof (companySave.err) != 'undefined')
                 {
                     return res.status(404).send(await result.errorResult("Company could not be registered",{ err: companySave.err}))
                 }
 
-                if(typeof companySave[0].MSG != 'undefined')
+                if(typeof companySave[0]?.MSG != 'undefined')
                 {
                     return res.status(404).send(await result.errorResult(companySave[0].MSG))
                 }
@@ -251,8 +251,6 @@ class mainLicence
                 req.body["installKey"] = await this.generateInstallKey()
 
                 const licenceSave = await this.licence.licenceSave(req.body)
-
-                console.log(licenceSave)
 
                 if(!licenceSave || licenceSave.err)
                 {
@@ -457,7 +455,7 @@ class licence
             }
         )
 
-        return typeof data.result.err != 'undefined' ? data.result : data.result.recordset
+        return typeof data.result.err != 'undefined' ? data.result : (typeof data.result.recordset != 'undefined' ? data.result.recordset : true)
     }
     async macIdUpdate(pMacId)
     {
@@ -489,7 +487,7 @@ class licence
                 value: [pBody.appName]
             }
         )
-            console.log(data)
+
         return typeof data.result.err != 'undefined' ? data.result : data.result.recordset 
     }
     async getCompany(pBody)
@@ -528,7 +526,7 @@ class licence
             }
         )
 
-        return typeof data.result.err != 'undefined' ? data.result : data.result.recordsets
+        return typeof data.result.err != 'undefined' ? data.result : true
     }
 }
 class crypto
