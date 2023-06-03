@@ -1,6 +1,6 @@
 export default 
 {
-	server: "172.18.100.250",
+	server: "172.20.100.240",
 	database: "GenLicence",
 	uid: "nitrogen",
 	pwd: "lp8462+",
