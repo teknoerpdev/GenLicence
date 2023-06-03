@@ -1,6 +1,6 @@
 function main ($scope)
 {
-    $scope.Init = function()
+    $scope.init = function()
     {
         
     }

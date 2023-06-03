@@ -1,4 +1,4 @@
-angular.module("app",
+let app = angular.module("app",
 [
     'ngRoute',
     'app.controller',
@@ -16,3 +16,14 @@ angular.module("app",
         templateUrl : "html/compAdd.html"
     })
 })
+
+app.run(function($rootScope) 
+{
+    $rootScope.$on('$routeChangeStart', function(event, next, current) 
+    {
+        if(window.sessionStorage.getItem('token') == null && window.location.pathname != '/index.html')
+        {
+            window.location = "index.html"
+        }
+    });
+});
