@@ -57,6 +57,92 @@ class mainLicence
             }
         })
 
+        this.core.app.post('/getLicence', async (req, res) => 
+        {
+            if(!req || !req.body)
+            {
+                return res.status(404).send(await result.errorResult("Missing Parameters"))
+            }
+
+            if(!req.headers['authorization'])
+            {
+                return res.status(404).send(await result.errorResult("Token Not Found"))
+            }
+
+            if(typeof req.body.appName == 'undefined')
+            {
+                return res.status(404).send(await result.errorResult("appName is required"))
+            }
+
+            const tokenHeader = req.headers['authorization']
+
+            if(typeof tokenHeader !== 'undefined')
+            {
+                const token = tokenHeader.split(' ')[1]
+                
+                const login = await this.auth.loginCheck(token)
+
+                if(!login || !login.length || login.err)
+                {
+                    return res.status(404).send(await result.errorResult("Invalid Token"))
+                }
+
+                req.body["login"] = login[0].CODE
+
+                const getLicence = await this.licence.getLicence(req.body)
+                
+                if(!getLicence || typeof (getLicence.err) != 'undefined')
+                {
+                    return res.status(404).send(await result.errorResult("Licence not found ",{ err: getLicence.err}))
+                }
+
+                return res.status(200).send(await result.successResult("success",getLicence))
+            }
+        })
+
+        this.core.app.post('/getCompany', async (req, res) => 
+        {
+            if(!req || !req.body)
+            {
+                return res.status(404).send(await result.errorResult("Missing Parameters"))
+            }
+
+            if(!req.headers['authorization'])
+            {
+                return res.status(404).send(await result.errorResult("Token Not Found"))
+            }
+
+            if(typeof req.body.taxNumber == 'undefined')
+            {
+                return res.status(404).send(await result.errorResult("taxNumber is required"))
+            }
+
+            const tokenHeader = req.headers['authorization']
+
+            if(typeof tokenHeader !== 'undefined')
+            {
+                const token = tokenHeader.split(' ')[1]
+                
+                const login = await this.auth.loginCheck(token)
+
+                if(!login || !login.length || login.err)
+                {
+                    return res.status(404).send(await result.errorResult("Invalid Token"))
+                }
+
+                req.body["login"] = login[0].CODE
+
+                const getCompany = await this.licence.getCompany(req.body)
+                
+                if(!getCompany || typeof (getCompany.err) != 'undefined')
+                {
+                    return res.status(404).send(await result.errorResult("Company not found ",{ err: getCompany.err}))
+                }
+
+                return res.status(200).send(await result.successResult("success",getCompany))
+            }
+        })
+
         this.core.app.post('/companySave', async (req, res) => 
         {
             if(!req || !req.body)
@@ -102,7 +188,7 @@ class mainLicence
 
                 const companySave = await this.licence.companySave(req.body)
                 
-                if(!companySave || companySave.err)
+                if(!companySave || typeof (companySave.err) != 'undefined')
                 {
                     return res.status(404).send(await result.errorResult("Company could not be registered",{ err: companySave.err}))
                 }
@@ -174,6 +260,60 @@ class mainLicence
                 }
 
                 return res.status(200).send(await result.successResult("Licence has been successfully created"))
+            }
+        })
+
+        this.core.app.post('/companyUpdate', async (req, res) => 
+        {
+            if(!req || !req.body)
+            {
+                return res.status(404).send(await result.errorResult("Missing Parameters"))
+            }
+
+            if(!req.headers['authorization'])
+            {
+                return res.status(404).send(await result.errorResult("Token Not Found"))
+            }
+
+            const paramsToCheck = 
+            {
+                "title": req.body.title,
+                "taxNumber": req.body.taxNumber, 
+                "adress": req.body.adress, 
+                "mail": req.body.mail, 
+                "phone": req.body.phone
+            }
+
+            const checkResult = this.checkParams(paramsToCheck)
+
+            if(!checkResult.success)
+            {
+                return res.status(404).send(await result.errorResult(checkResult.message))
+            }
+
+            const tokenHeader = req.headers['authorization']
+
+            if(typeof tokenHeader !== 'undefined')
+            {
+                const token = tokenHeader.split(' ')[1]
+                
+                const login = await this.auth.loginCheck(token)
+
+                if(!login || !login.length || login.err)
+                {
+                    return res.status(404).send(await result.errorResult("Invalid Token"))
+                }
+
+                req.body["login"] = login[0].CODE
+
+                const companyUpdate = await this.licence.companyUpdate(req.body)
+                
+                if(!companyUpdate || typeof (companyUpdate.err) != 'undefined')
+                {
+                    return res.status(404).send(await result.errorResult("Company could not be registered",{ err: companyUpdate.err}))
+                }
+
+                return res.status(200).send(await result.successResult("Company has been successfully updated"))
             }
         })
     }
@@ -331,6 +471,64 @@ class licence
         )
 
         return typeof data.result.err != 'undefined' ? data.result : data.result.recordset
+    }
+    async getLicence(pBody)
+    {
+        const data = await this.core.sql.execute
+        (
+            {
+                query: `SELECT 
+                        COMP_TAX, PACKET, MAC_ID
+                        START_DATE, END_DATE, SELLER,
+                        APP, P.NAME AS PACKET_NAME,
+                        MENU, USER_COUNT
+                        FROM [GenLicence].[dbo].[LICENSES] AS LCS
+                        INNER JOIN PACKETS AS P ON LCS.PACKET = P.ID
+                        WHERE ((APP = @APP) OR (@APP = '')) `,
+                param: ["APP:string|100"],
+                value: [pBody.appName]
+            }
+        )
+            console.log(data)
+        return typeof data.result.err != 'undefined' ? data.result : data.result.recordset 
+    }
+    async getCompany(pBody)
+    {
+        const data = await this.core.sql.execute
+        (
+            {
+                query: `SELECT 
+                        TAX_NUMBER,
+                        TITLE,
+                        ADRESS,
+                        MAIL,
+                        PHONE
+                        FROM [GenLicence].[dbo].[COMPANIES]
+                        WHERE ((TAX_NUMBER = '') OR ('' = '')) `,
+                param: ["APP:string|100"],
+                value: [pBody.taxNumber]
+            }
+        )
+
+        return typeof data.result.err != 'undefined' ? data.result : data.result.recordset 
+    }
+    async companyUpdate(pBody)
+    {
+        const data = await this.core.sql.execute
+        (
+            {
+                query: `UPDATE [GenLicence].[dbo].[COMPANIES]
+                        SET TITLE = @TITLE, 
+                        ADRESS = @ADRESS, 
+                        MAIL = @MAIL,
+                        PHONE = @PHONE
+                        WHERE TAX_NUMBER = @TAX_NUMBER`,
+                param: ['TAX_NUMBER:string|50','TITLE:string|200','ADRESS:string|max','MAIL:string|50','PHONE:string|50'],
+                value: [pBody.taxNumber,pBody.title,pBody.adress,pBody.mail,pBody.phone]
+            }
+        )
+
+        return typeof data.result.err != 'undefined' ? data.result : data.result.recordsets
     }
 }
 class crypto
