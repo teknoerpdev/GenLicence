@@ -15,6 +15,10 @@ let app = angular.module("app",
     {
         templateUrl : "html/compAdd.html"
     })
+    .when("/compList",
+    {
+        templateUrl : "html/compList.html"
+    })
 })
 
 app.run(function($rootScope) 
