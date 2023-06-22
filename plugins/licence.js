@@ -132,7 +132,7 @@ class mainLicence
                 }
 
                 req.body["login"] = login[0].CODE
-                req.body["installKey"] = await this.generateInstallKey()
+                req.body["installKey"] = this.generateInstallKey()
 
                 const licenceSave = await this.licence.licenceSave(req.body)
 
@@ -142,6 +142,135 @@ class mainLicence
                 }
 
                 return res.status(200).send(await result.successResult("Licence has been successfully created"))
+            }
+        })
+
+        this.core.app.post('/licenceUpdate', async (req, res) => 
+        {
+            const checkReq = await this.checkRequest(req,res)
+
+            if(checkReq) 
+            {
+                return checkReq
+            }
+
+            const requiredParams = ["guid","taxNumber","packet","startDate","endDate","seller"]
+            const checkResult = this.checkParams(requiredParams,req.body)
+
+            if(!checkResult.success)
+            {
+                return res.status(404).send(await result.errorResult(checkResult.message))
+            }
+
+            const tokenHeader = req.headers['authorization']
+
+            if(typeof tokenHeader !== 'undefined')
+            {
+                const token = tokenHeader.split(' ')[1]
+                
+                const login = await this.auth.loginCheck(token)
+
+                if(!login || !login.length || login.err)
+                {
+                    return res.status(404).send(await result.errorResult("Invalid Token"))
+                }
+
+                req.body["login"] = login[0].CODE
+
+                const licenceUpdate = await this.licence.licenceUpdate(req.body)
+
+                if(!licenceUpdate || licenceUpdate.err)
+                {
+                    return res.status(404).send(await result.errorResult("Licence could not be registered",{ err: licenceUpdate.err}))
+                }
+
+                return res.status(200).send(await result.successResult("Licence has been successfully updated"))
+            }
+        })
+
+        this.core.app.post('/macIdUpdate', async (req, res) => 
+        {
+            const checkReq = await this.checkRequest(req,res)
+
+            if(checkReq) 
+            {
+                return checkReq
+            }
+
+            const requiredParams = ["taxNumber","installKey","macId"]
+            const checkResult = this.checkParams(requiredParams,req.body)
+
+            if(!checkResult.success)
+            {
+                return res.status(404).send(await result.errorResult(checkResult.message))
+            }
+
+            const tokenHeader = req.headers['authorization']
+
+            if(typeof tokenHeader !== 'undefined')
+            {
+                const token = tokenHeader.split(' ')[1]
+                
+                const login = await this.auth.loginCheck(token)
+
+                if(!login || !login.length || login.err)
+                {
+                    return res.status(404).send(await result.errorResult("Invalid Token"))
+                }
+
+                req.body["login"] = login[0].CODE
+
+                const macIdUpdate = await this.licence.macIdUpdate(req.body)
+
+                if(!macIdUpdate || macIdUpdate.err)
+                {
+                    return res.status(404).send(await result.errorResult("MacId could not be registered",{ err: macIdUpdate.err}))
+                }
+
+                return res.status(200).send(await result.successResult("MacId has been successfully updated"))
+            }
+        })
+
+        this.core.app.post('/licenceDelete', async (req, res) => 
+        {
+            const checkReq = await this.checkRequest(req,res)
+
+            if(checkReq) 
+            {
+                return checkReq
+            }
+
+            const requiredParams = ["guid"]
+            const checkResult = this.checkParams(requiredParams,req.body)
+
+            if(!checkResult.success)
+            {
+                return res.status(404).send(await result.errorResult(checkResult.message))
+            }
+
+            const tokenHeader = req.headers['authorization']
+
+            if(typeof tokenHeader !== 'undefined')
+            {
+                const token = tokenHeader.split(' ')[1]
+                
+                const login = await this.auth.loginCheck(token)
+
+                if(!login || !login.length || login.err)
+                {
+                    return res.status(404).send(await result.errorResult("Invalid Token"))
+                }
+
+                req.body["login"] = login[0].CODE
+
+                const licenceDelete = await this.licence.licenceDelete(req.body)
+
+                if(!licenceDelete || licenceDelete.err)
+                {
+                    return res.status(404).send(await result.errorResult("Licence could not be registered",{ err: licenceDelete.err}))
+                }
+
+                return res.status(200).send(await result.successResult("Licence has been successfully deleted"))
             }
         })
         //#endregion Licence
@@ -734,6 +863,52 @@ class licence
         )
 
         return typeof data.result.err != 'undefined' ? data.result : data.result.rowsAffected
+    }
+    async licenceDelete(pBody)
+    {
+        const data = await this.core.sql.execute
+        (
+            {
+                query: `DELETE [dbo].[LICENSES] WHERE GUID = @GUID `,
+                param: ['GUID:string|50'],
+                value: [pBody.guid]
+            }
+        )
+
+        return typeof data.result.err != 'undefined' ? data.result : (typeof data.result.recordset != 'undefined' ? data.result.recordset : true)
+    }
+    async licenceUpdate(pBody)
+    {
+        const data = await this.core.sql.execute
+        (
+            {
+                query: `UPDATE [GenLicence].[dbo].[LICENSES]
+                        SET COMP_TAX = @TAX_NUMBER, 
+                        PACKET = @PACKET, 
+                        START_DATE = @START_DATE,
+                        END_DATE = @END_DATE
+                        WHERE GUID = @GUID`,
+                param: ['TAX_NUMBER:string|50','PACKET:int','START_DATE:datetime','END_DATE:datetime','GUID:string|50'],
+                value: [pBody.taxNumber,pBody.packet,pBody.startDate,pBody.endDate,pBody.guid]
+            }
+        )
+
+        return typeof data.result.err != 'undefined' ? data.result : true
+    }
+    async macIdUpdate(pBody)
+    {
+        const data = await this.core.sql.execute
+        (
+            {
+                query: `UPDATE [GenLicence].[dbo].[LICENSES]
+                        SET MAC_ID = @MAC_ID 
+                        WHERE TAX_NUMBER = @TAX_NUMBER AND INSTALL_KEY = @INSTALL_KEY`,
+                param: ['TAX_NUMBER:string|50','INSTALL_KEY:string|15','MAC_ID:string|100'],
+                value: [pBody.taxNumber,pBody.packet,pBody.startDate,pBody.endDate,pBody.guid]
+            }
+        )
+
+        return typeof data.result.err != 'undefined' ? data.result : true
     }
     async getLicence(pBody)
     {
