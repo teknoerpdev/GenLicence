@@ -1,0 +1,61 @@
+<div ng-controller = "licAddCtrl" ng-init="init()">
+    <div class="row pt-3 px-3">
+        <div class="col-6">
+            <div class="mb-3 row">
+                <label class="col-2 col-form-label text-end">Ünvan :</label>
+                <div class="col-10">
+                  <input type="text" class="form-control" ng-model="comp_tax">
+                </div>
+            </div>
+            <div class="mb-3 row">
+                <label class="col-2 col-form-label text-end">İnstall Key :</label>
+                <div class="col-10">
+                  <input type="text" class="form-control" ng-model="install_key">
+                </div>
+            </div>
+            <div class="mb-3 row">
+                <label class="col-2 col-form-label text-end">Başlangıç Tarihi :</label>
+                <div class="col-10">
+                  <input type="text" class="form-control" ng-model="start_date">
+                </div>
+            </div>
+            <div class="mb-3 row">
+                <label class="col-2 col-form-label text-end">Satış Yapan :</label>
+                <div class="col-10">
+                <input type="text" class="form-control" ng-model="seller">
+                </div>
+            </div>
+            </div>
+        <div class="col-6">
+            <div class="mb-3 row">
+                <label class="col-2 col-form-label text-end">Paket :</label>
+                <div class="col-10">
+                  <input type="text" class="form-control" ng-model="packet">
+                </div>
+            </div>
+            <div class="mb-3 row">
+                <label class="col-2 col-form-label text-end">Mac ID :</label>
+                <div class="col-10">
+                  <input type="text" class="form-control" ng-model="mac_id"> 
+                </div>
+            </div>
+            <div class="mb-3 row">
+                <label class="col-2 col-form-label text-end">Bitiş Tarihi :</label>
+                <div class="col-10">
+                    <input type="text" class="form-control" ng-model="end_date">
+                </div>
+            </div>
+        </div>
+    <div class="row px-3">
+        <div class="col-6">
+            <div class="row">
+                <div class="col-6">
+                    <button type="button" class="btn btn-success" style="width: 100%;" ng-click="init()">Yeni</button>
+                </div>
+                <div class="col-6">
+                    <button type="button" class="btn btn-primary" style="width: 100%;" ng-click="btnSave()">Kaydet</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

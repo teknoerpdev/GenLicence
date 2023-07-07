@@ -329,17 +329,13 @@ class mainLicence
     }
     async generateInstallKey()
     {
-        let key = ""
+        let key = Math.floor(100000 + Math.random() * 900000);
 
-        const keyList = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","Y","Z","X",
-        "0","1","2","3","4","5","6","7","8","9"];
-
-        for(let i = 0; i < 15; i++)
+        if (key >= 1000000) 
         {
-            let random = Math.floor(Math.random()*35);
-            key += keyList[random];
+            key = Math.floor(key / 10);
         }
-
+        
         return key
     }
 }

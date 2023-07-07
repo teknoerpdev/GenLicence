@@ -3,6 +3,7 @@ let app = angular.module("app",
     'ngRoute',
     'app.controller',
     // 'app.db'
+    'dx'
 ])
 .config(function($routeProvider)
 { 
@@ -18,6 +19,22 @@ let app = angular.module("app",
     .when("/compList",
     {
         templateUrl : "html/compList.html"
+    })
+    .when("/licAdd",
+    {
+        templateUrl : "html/licAdd.html"
+    })
+    .when("/licList",
+    {
+        templateUrl : "html/licList.html"
+    })
+    .when("/packAdd",
+    {
+        templateUrl : "html/packAdd.html"
+    })
+    .when("/packList",
+    {
+        templateUrl : "html/packList.html"
     })
 })
 
